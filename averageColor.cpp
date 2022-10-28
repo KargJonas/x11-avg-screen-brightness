@@ -1,65 +1,83 @@
 #include <iostream>
 #include <X11/Xlib.h>
-#include <cmath> // round()
+#include <cmath>
 
-// https://stackoverflow.com/a/59663458/1997354
-inline __attribute__((always_inline)) \
-unsigned long XGetPixel(XImage * ximage, const int & x, const int & y)
-{
-    return (*ximage->f.get_pixel)(ximage, x, y);
-}
+/**
+ * Compile with:
+ * g++ -O2 -std=c++17 -Wall -Wextra -Werror -Wpedantic -pedantic-errors averageColor.cpp -o averageColor $(pkg-config --cflags --libs x11)
+ * if g++ does not work, use g++-7
+*/
 
 int main(int argc, char* argv[])
 {
     if (argc != 6) {
-        std::cerr << "Invalid number of arguments.\nExpected: <pos_x> <pos_y> <width> <height> <n_samples>" << std::endl;
+        std::cerr << "Invalid number of arguments.\nExpected: <pos_x> <pos_y> <width> <height> <sample_rate>" << std::endl;
         return 1;
     }
 
-    const uint x = strtol(argv[1], nullptr, 0);
-    const uint y = strtol(argv[2], nullptr, 0);
-    const uint width = strtol(argv[3], nullptr, 0);
-    const uint height = strtol(argv[4], nullptr, 0);
-    const uint n_samples = strtol(argv[5], nullptr, 0);
+    const float n_samples = strtod(argv[5], nullptr);
 
-    std::cout << x << std::endl;
-    std::cout << x << std::endl;
-    std::cout << width << std::endl;
-    std::cout << height << std::endl;
-    std::cout << n_samples << std::endl;
+    if (n_samples < 0 || n_samples > 1) {
+        std::cerr << "Invalid argument parameter 5 (sample_rate) should be a float from 0 to 1." << std::endl;
+        return 1;
+    }
 
-    Display * my_display = XOpenDisplay(NULL);
+
+    const uint x = strtol(argv[1], nullptr, 0),
+        y = strtol(argv[2], nullptr, 0),
+        width = strtol(argv[3], nullptr, 0),
+        height = strtol(argv[4], nullptr, 0);
+
+
     XColor pixel_color;
 
+    Display * display = XOpenDisplay(NULL);
+
     XImage * screen_image = XGetImage(
-        my_display,
-        XRootWindow(my_display, XDefaultScreen(my_display)),
+        display,
+        XRootWindow(display, XDefaultScreen(display)),
         x, y,
         width, height,
         AllPlanes,
         XYPixmap
     );
 
-    pixel_color.pixel = XGetPixel(screen_image, 0, 0);
+    uint r = 0, g = 0, b = 0;
+
+    const uint step = floor(1 / n_samples);
+    uint n_pixels = 0;
+
+    for (uint _y = 0; _y < height; _y++) {
+        for (uint _x = 0; _x < width; _x += step) {
+            pixel_color.pixel = 
+                screen_image->f.get_pixel(screen_image, _x, _y);
+
+
+            XQueryColor(
+                display,
+                XDefaultColormap(display, XDefaultScreen(display)),
+                &pixel_color
+            );
+
+            r += pixel_color.red;
+            g += pixel_color.green;
+            b += pixel_color.blue;
+
+            n_pixels++;
+        }
+    }
+
+    const uint factor = n_pixels * 256;
+
+    r /= factor;
+    g /= factor;
+    b /= factor;
+
+    std::cout << "r: " << r << std::endl;
+    std::cout << "g: " << g << std::endl;
+    std::cout << "b: " << b << std::endl;
 
     XFree(screen_image);
 
-    XQueryColor(
-        my_display,
-        XDefaultColormap(my_display, XDefaultScreen(my_display)),
-        & pixel_color
-    );
-
-    XCloseDisplay(my_display);
-
-    unsigned short r = pixel_color.red;
-    unsigned short g = pixel_color.green;
-    unsigned short b = pixel_color.blue;
-
-    // (r + g + b) / 3 / 256 <=> (r + g + b) / 768
-    unsigned short brightness = (r + g + b) / 768;
-
-    std::cout
-        << "Brightness: " << brightness << std::endl;
-
+    XCloseDisplay(display);
 }
