@@ -1,4 +1,4 @@
-#/bin/bash
+#!/bin/bash
 
 brightness=$(./get_avg_brightness 200 200 100 100 .02)
 
