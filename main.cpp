@@ -22,7 +22,6 @@ int main(int argc, char* argv[])
         return 1;
     }
 
-
     const uint x = strtol(argv[1], nullptr, 0),
         y = strtol(argv[2], nullptr, 0),
         width = strtol(argv[3], nullptr, 0),
