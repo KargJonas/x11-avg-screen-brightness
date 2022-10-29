@@ -27,8 +27,8 @@ int main(int argc, char* argv[])
         width = strtol(argv[3], nullptr, 0),
         height = strtol(argv[4], nullptr, 0);
 
-    uint* averageColor = getAverageColor(x, y, width, height, n_samples);
-    uint brightness = (averageColor[0] + averageColor[1] + averageColor[2]) / 3;
+    ushort* averageColor = getAverageColor(x, y, width, height, n_samples);
+    ushort brightness = (averageColor[0] + averageColor[1] + averageColor[2]) / 3;
 
     std::cout << brightness << std::endl;
 
